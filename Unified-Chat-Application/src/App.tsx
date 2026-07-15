@@ -1,6 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-type AgentId = 'rest' | 'keyword' | 'semantic' | 'tools' | 'mcp' | 'orchestration';
+type AgentOption = {
+  id: string;
+  label: string;
+  description: string;
+};
 
 type ChatMessage = {
   role: 'user' | 'assistant';
@@ -13,13 +17,8 @@ type ChatResponsePayload = {
   placeholder: boolean;
 };
 
-const agents: Record<AgentId, { label: string; description: string }> = {
-  rest: { label: 'REST API Agent', description: 'Inference via REST API backend' },
-  keyword: { label: 'Keyword Search Agent', description: 'Simple RAG with keyword search' },
-  semantic: { label: 'Semantic Search Agent', description: 'RAG with semantic search' },
-  tools: { label: 'Tool Agent', description: 'RAG with tool calling capability' },
-  mcp: { label: 'MCP Agent', description: 'RAG with MCP integration' },
-  orchestration: { label: 'Orchestration Agent', description: 'Multi-agent orchestration' },
+type AgentsPayload = {
+  agents: AgentOption[];
 };
 
 const initialMessages: ChatMessage[] = [
@@ -29,16 +28,81 @@ const initialMessages: ChatMessage[] = [
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '');
 
 const App = () => {
-  const [agent, setAgent] = useState<AgentId>('rest');
+  const [agent, setAgent] = useState('');
+  const [availableAgents, setAvailableAgents] = useState<AgentOption[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(true);
+  const [agentsError, setAgentsError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState('');
 
-  const agentInfo = agents[agent];
+  const agentInfo = useMemo(
+    () => availableAgents.find((item) => item.id === agent) ?? null,
+    [availableAgents, agent]
+  );
 
-  const handleAgentChange = (value: AgentId) => {
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadAgents = async () => {
+      setAgentsLoading(true);
+      setAgentsError(null);
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/agents`, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const payload = (await response.json()) as Partial<AgentsPayload>;
+        const agentList = Array.isArray(payload.agents)
+          ? payload.agents.filter(
+              (item): item is AgentOption =>
+                typeof item.id === 'string' &&
+                typeof item.label === 'string' &&
+                typeof item.description === 'string'
+            )
+          : [];
+
+        if (agentList.length === 0) {
+          throw new Error('No agents available');
+        }
+
+        setAvailableAgents(agentList);
+        setAgent((current) => {
+          if (current && agentList.some((item) => item.id === current)) {
+            return current;
+          }
+          return agentList[0].id;
+        });
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : 'Unexpected error';
+        setAgentsError(message);
+        setAvailableAgents([]);
+        setAgent('');
+      } finally {
+        setAgentsLoading(false);
+      }
+    };
+
+    void loadAgents();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  const handleAgentChange = (value: string) => {
+    const selectedAgent = availableAgents.find((item) => item.id === value);
     setAgent(value);
     setMessages([
-      { role: 'assistant', content: `Agent switched to ${agents[value].label}. Start a new conversation.` },
+      {
+        role: 'assistant',
+        content: `Agent switched to ${selectedAgent?.label ?? value}. Start a new conversation.`,
+      },
     ]);
     setInput('');
   };
@@ -53,7 +117,7 @@ const App = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const content = input.trim();
-    if (!content) return;
+    if (!content || !agent) return;
 
     const userMessage = { role: 'user' as const, content };
     const nextHistory = [...messages, userMessage];
@@ -107,10 +171,15 @@ const App = () => {
               Agent
               <select
                 value={agent}
-                onChange={(event) => handleAgentChange(event.target.value as AgentId)}
+                onChange={(event) => handleAgentChange(event.target.value)}
+                disabled={agentsLoading || availableAgents.length === 0}
               >
-                {Object.entries(agents).map(([key, value]) => (
-                  <option key={key} value={key}>{value.label}</option>
+                {agentsLoading && <option value="">Loading agents...</option>}
+                {!agentsLoading && availableAgents.length === 0 && (
+                  <option value="">No agents available</option>
+                )}
+                {availableAgents.map((item) => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
                 ))}
               </select>
             </label>
@@ -118,38 +187,40 @@ const App = () => {
               Clear Chat
             </button>
           </div>
+          <p className="active-agent-inline">
+            {agentInfo ? (
+              <>
+                <span>{agentInfo.description}</span>
+              </>
+            ) : (
+              <span>{agentsError ? `Unable to load agents: ${agentsError}` : 'Loading available agents...'}</span>
+            )}
+          </p>
         </header>
 
-        <section className="agent-card">
-          <div>
-            <p className="agent-label">Active agent</p>
-            <h2>{agentInfo.label}</h2>
-            <p>{agentInfo.description}</p>
-          </div>
+        <section className="conversation-panel">
+          <main className="message-list" aria-live="polite">
+            {messages.map((message, index) => (
+              <article key={`${message.role}-${index}`} className={`message ${message.role}`}>
+                <span className="message-role">{message.role === 'user' ? 'You' : 'Agent'}</span>
+                <p>{message.content}</p>
+              </article>
+            ))}
+          </main>
+
+          <form className="message-form" onSubmit={handleSubmit}>
+            <label htmlFor="chat-input" className="sr-only">Message input</label>
+            <textarea
+              id="chat-input"
+              rows={2}
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+            />
+            <button type="submit" className="send-button" disabled={isLoading || !agent}>
+              {isLoading ? '...' : 'Send'}
+            </button>
+          </form>
         </section>
-
-        <main className="message-list" aria-live="polite">
-          {messages.map((message, index) => (
-            <article key={`${message.role}-${index}`} className={`message ${message.role}`}>
-              <span className="message-role">{message.role === 'user' ? 'You' : 'Agent'}</span>
-              <p>{message.content}</p>
-            </article>
-          ))}
-        </main>
-
-        <form className="message-form" onSubmit={handleSubmit}>
-          <label htmlFor="chat-input" className="sr-only">Type your message</label>
-          <textarea
-            id="chat-input"
-            rows={3}
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder="Ask the current agent anything..."
-          />
-          <button type="submit" className="send-button" disabled={isLoading}>
-            {isLoading ? 'Thinking…' : 'Send'}
-          </button>
-        </form>
 
         <footer className="payload-panel">
           <h3>Payload preview</h3>

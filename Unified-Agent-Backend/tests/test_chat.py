@@ -32,6 +32,20 @@ def test_health_check() -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_list_agents_returns_ids_labels_and_descriptions() -> None:
+    response = client.get("/api/agents")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "agents" in payload
+    assert len(payload["agents"]) >= 1
+
+    first_agent = payload["agents"][0]
+    assert "id" in first_agent
+    assert "label" in first_agent
+    assert "description" in first_agent
+
+
 @pytest.mark.parametrize(
     ("agent", "expected_fragment"),
     [

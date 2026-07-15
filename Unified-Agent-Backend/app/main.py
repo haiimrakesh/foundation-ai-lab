@@ -21,13 +21,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-AGENT_LABELS = {
-    "rest": "REST API Agent",
-    "keyword": "Keyword Search Agent",
-    "semantic": "Semantic Search Agent",
-    "tools": "Tool Agent",
-    "mcp": "MCP Agent",
-    "orchestration": "Orchestration Agent",
+AGENTS = {
+    "rest": {
+        "label": "REST API Agent",
+        "description": "Inference via REST API backend",
+    },
+    "keyword": {
+        "label": "Keyword Search Agent",
+        "description": "Simple RAG with keyword search",
+    },
+    "semantic": {
+        "label": "Semantic Search Agent",
+        "description": "RAG with semantic search",
+    },
+    "tools": {
+        "label": "Tool Agent",
+        "description": "RAG with tool calling capability",
+    },
+    "mcp": {
+        "label": "MCP Agent",
+        "description": "RAG with MCP integration",
+    },
+    "orchestration": {
+        "label": "Orchestration Agent",
+        "description": "Multi-agent orchestration",
+    },
 }
 
 _llm_service: LLMService | None = None
@@ -42,8 +60,12 @@ def health_check() -> dict[str, str]:
 def list_agents() -> dict[str, list[dict[str, str]]]:
     return {
         "agents": [
-            {"id": agent_id, "label": label}
-            for agent_id, label in AGENT_LABELS.items()
+            {
+                "id": agent_id,
+                "label": metadata["label"],
+                "description": metadata["description"],
+            }
+            for agent_id, metadata in AGENTS.items()
         ]
     }
 
@@ -55,7 +77,7 @@ def chat(request: ChatRequest) -> ChatResponse:
 
 @app.post("/api/agents/{agent_id}/chat", response_model=ChatResponse)
 def agent_chat(agent_id: str, request: AgentChatRequest) -> ChatResponse:
-    if agent_id not in AGENT_LABELS:
+    if agent_id not in AGENTS:
         raise HTTPException(status_code=404, detail="Unknown agent")
     return build_response(agent_id, request.message, request.history)
 
@@ -72,7 +94,7 @@ def build_response(
     message: str,
     history: list[dict] | None = None,
 ) -> ChatResponse:
-    label = AGENT_LABELS[agent_id]
+    label = AGENTS[agent_id]["label"]
     try:
         reply = get_llm_service().generate(
             agent_id=agent_id,
