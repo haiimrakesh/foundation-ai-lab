@@ -1,6 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
+load_dotenv()
+
+from .llm import LLMConfigurationError, LLMService, LLMServiceError
 from .models import AgentChatRequest, ChatRequest, ChatResponse
 
 app = FastAPI(title="Foundation AI Lab Backend", version="0.1.0")
@@ -26,6 +30,8 @@ AGENT_LABELS = {
     "orchestration": "Orchestration Agent",
 }
 
+_llm_service: LLMService | None = None
+
 
 @app.get("/health")
 def health_check() -> dict[str, str]:
@@ -44,20 +50,39 @@ def list_agents() -> dict[str, list[dict[str, str]]]:
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
-    return build_response(request.agent, request.message)
+    return build_response(request.agent, request.message, request.history)
 
 
 @app.post("/api/agents/{agent_id}/chat", response_model=ChatResponse)
 def agent_chat(agent_id: str, request: AgentChatRequest) -> ChatResponse:
     if agent_id not in AGENT_LABELS:
         raise HTTPException(status_code=404, detail="Unknown agent")
-    return build_response(agent_id, request.message)
+    return build_response(agent_id, request.message, request.history)
 
 
-def build_response(agent_id: str, message: str) -> ChatResponse:
+def get_llm_service() -> LLMService:
+    global _llm_service
+    if _llm_service is None:
+        _llm_service = LLMService()
+    return _llm_service
+
+
+def build_response(
+    agent_id: str,
+    message: str,
+    history: list[dict] | None = None,
+) -> ChatResponse:
     label = AGENT_LABELS[agent_id]
-    reply = (
-        f"{label} placeholder response: I received '{message}'. "
-        "This backend is wired for future RAG and tool integrations."
-    )
-    return ChatResponse(agent=agent_id, reply=reply, placeholder=True)
+    try:
+        reply = get_llm_service().generate(
+            agent_id=agent_id,
+            agent_label=label,
+            message=message,
+            history=history,
+        )
+    except LLMConfigurationError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except LLMServiceError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return ChatResponse(agent=agent_id, reply=reply, placeholder=False)

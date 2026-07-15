@@ -29,6 +29,31 @@ fi
 
 python -m pip install -r "$repo_root/requirements.txt" >/dev/null 2>&1 || true
 
+stop_existing_process_on_port() {
+  local port="$1"
+  local service_name="$2"
+  local pids
+
+  pids="$(lsof -ti tcp:"$port" 2>/dev/null || true)"
+  if [[ -z "$pids" ]]; then
+    return
+  fi
+
+  echo "Stopping existing $service_name process(es) on port $port: $pids"
+  kill $pids 2>/dev/null || true
+
+  sleep 1
+
+  pids="$(lsof -ti tcp:"$port" 2>/dev/null || true)"
+  if [[ -n "$pids" ]]; then
+    echo "Force stopping $service_name process(es) on port $port: $pids"
+    kill -9 $pids 2>/dev/null || true
+  fi
+}
+
+stop_existing_process_on_port 8000 "backend"
+stop_existing_process_on_port 5173 "frontend"
+
 cleanup() {
   if [[ -n "${backend_pid:-}" ]]; then
     kill "$backend_pid" 2>/dev/null || true
