@@ -1,0 +1,233 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #e7e9ee;
+  color: #262626;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at top, #f8f9fb 0%, #e7e9ee 45%, #d9dce2 100%);
+}
+
+.page-shell {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.chat-card {
+  width: min(100%, 920px);
+  background: #ecedf2;
+  border: 1px solid #e0e4ea;
+  border-radius: 32px;
+  box-shadow: 12px 12px 24px rgba(158, 168, 187, 0.18), -10px -10px 24px rgba(255, 255, 255, 0.9);
+  padding: 2rem;
+  display: grid;
+  gap: 1.75rem;
+}
+
+.chat-header {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 2.5vw, 2.75rem);
+  line-height: 1.05;
+}
+
+.subtitle {
+  margin: 0.75rem 0 0;
+  color: #555b68;
+  max-width: 42rem;
+}
+
+.controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.select-label {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+select {
+  min-width: 220px;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  border: 1px solid #d6d9e0;
+  background: #eff1f6;
+  box-shadow: inset 5px 5px 10px rgba(176, 184, 199, 0.18), inset -5px -5px 10px rgba(255, 255, 255, 0.9);
+  color: #1f2937;
+}
+
+.clear-button,
+.send-button {
+  border: none;
+  border-radius: 18px;
+  padding: 0.95rem 1.15rem;
+  background: #f0f2f7;
+  color: #29303c;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 8px 8px 18px rgba(158, 168, 187, 0.18), -8px -8px 18px rgba(255, 255, 255, 0.9);
+}
+
+.clear-button:hover,
+.send-button:hover {
+  transform: translateY(-1px);
+  background: #e9edf4;
+}
+
+.agent-card,
+.message-form,
+.payload-panel {
+  background: #edf0f5;
+  border-radius: 28px;
+  border: 1px solid #d9dce2;
+  box-shadow: 8px 8px 18px rgba(169, 178, 190, 0.16), -8px -8px 18px rgba(255, 255, 255, 0.75);
+  padding: 1.45rem 1.5rem;
+}
+
+.agent-card h2 {
+  margin: 0.35rem 0 0.55rem;
+}
+
+.agent-label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #5b6370;
+}
+
+.message-list {
+  display: grid;
+  gap: 1rem;
+  max-height: 44vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.message {
+  padding: 1rem 1.15rem;
+  border-radius: 24px;
+  border: 1px solid transparent;
+  background: #f3f5f9;
+  box-shadow: inset 3px 3px 8px rgba(255, 255, 255, 0.8), inset -3px -3px 8px rgba(176, 184, 199, 0.12);
+}
+
+.message.assistant {
+  align-self: flex-start;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: #e8ecf5;
+}
+
+.message-role {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-size: 0. eightrem;
+  font-weight: 700;
+  color: #4a5460;
+}
+
+.message p {
+  margin: 0;
+  line-height: 1.7;
+  color: #2f3743;
+}
+
+.message-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+  padding: 1rem 1.1rem;
+  border-radius: 22px;
+  border: 1px solid #d4d7dd;
+  background: #f5f7fb;
+  color: #222933;
+  box-shadow: inset 5px 5px 12px rgba(153, 165, 185, 0.16), inset -5px -5px 12px rgba(255, 255, 255, 0.95);
+}
+
+.payload-panel h3 {
+  margin: 0 0 0.75rem;
+}
+
+.payload-panel pre {
+  margin: 0;
+  overflow-x: auto;
+  padding: 1rem;
+  background: #eff2f7;
+  border-radius: 18px;
+  border: 1px solid #d9dde4;
+  color: #1f2a37;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 720px) {
+  .chat-card {
+    padding: 1.5rem;
+  }
+
+  .controls-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .select-label,
+  .clear-button {
+    width: 100%;
+  }
+}
