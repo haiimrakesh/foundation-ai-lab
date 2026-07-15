@@ -1,5 +1,5 @@
 ---
-name: run-react-ui
+name: run-ui
 description: Run the React frontend application for the AI Agents chat UI.
 arguments:
   - name: none
@@ -9,9 +9,9 @@ arguments:
 This skill launches the React UI application for the repository using the configured package script.
 
 Steps:
-1. Ensure the workspace root has `package.json` and `run-react-ui.sh`.
-2. Run the cross-platform shell wrapper `./run-react-ui.sh`.
-3. If the script is not executable, use `chmod +x run-react-ui.sh` first.
+1. Ensure the React app package is available under the workspace app directory and the shell wrapper is present in the skill's Scripts folder.
+2. Run the wrapper from the repository root with `./.github/skills/run-ui/Scripts/run-ui.sh`.
+3. If the script is not executable, use `chmod +x ./.github/skills/run-ui/Scripts/run-ui.sh` first.
 
 Use cases:
 - Start the local React development server.
@@ -24,5 +24,6 @@ Example prompts:
 - "Launch the AI agent chat interface."
 
 Notes:
-- The skill depends on `npm install` having been executed.
+- The wrapper locates the React app automatically from its own script path.
+- If `node_modules` is missing, the script installs dependencies before starting the dev server.
 - The script invokes `npm run start`, which is aliased to `vite`.
