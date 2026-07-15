@@ -7,6 +7,12 @@ type ChatMessage = {
   content: string;
 };
 
+type ChatResponsePayload = {
+  agent: string;
+  reply: string;
+  placeholder: boolean;
+};
+
 const agents: Record<AgentId, { label: string; description: string }> = {
   rest: { label: 'REST API Agent', description: 'Inference via REST API backend' },
   keyword: { label: 'Keyword Search Agent', description: 'Simple RAG with keyword search' },
@@ -19,6 +25,8 @@ const agents: Record<AgentId, { label: string; description: string }> = {
 const initialMessages: ChatMessage[] = [
   { role: 'assistant', content: 'Select an agent and start the conversation.' },
 ];
+
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '');
 
 const App = () => {
   const [agent, setAgent] = useState<AgentId>('rest');
@@ -40,17 +48,44 @@ const App = () => {
     setInput('');
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const content = input.trim();
     if (!content) return;
 
-    setMessages((current) => [
-      ...current,
-      { role: 'user', content },
-      { role: 'assistant', content: `This is a placeholder response from ${agentInfo.label}.` },
-    ]);
+    const userMessage = { role: 'user' as const, content };
+    const nextHistory = [...messages, userMessage];
+    setMessages((current) => [...current, userMessage]);
     setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/agents/${agent}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: content, history: nextHistory }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const payload = (await response.json()) as ChatResponsePayload;
+      setMessages((current) => [
+        ...current,
+        { role: 'assistant', content: payload.reply },
+      ]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unexpected error';
+      setMessages((current) => [
+        ...current,
+        { role: 'assistant', content: `Request failed: ${message}` },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const conversationPayload = useMemo(
@@ -111,7 +146,9 @@ const App = () => {
             onChange={(event) => setInput(event.target.value)}
             placeholder="Ask the current agent anything..."
           />
-          <button type="submit" className="send-button">Send</button>
+          <button type="submit" className="send-button" disabled={isLoading}>
+            {isLoading ? 'Thinking…' : 'Send'}
+          </button>
         </form>
 
         <footer className="payload-panel">
