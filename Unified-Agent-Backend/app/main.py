@@ -24,7 +24,7 @@ app.add_middleware(
 AGENTS = {
     "rest": {
         "label": "REST API Agent",
-        "description": "Inference via REST API backend",
+        "description": "This agent integrates with your LLM configuration and give you a chat experience. It will be similar to ChatGPT, but with your own LLM configuration. You can use this agent to test your LLM configuration and see how it performs.",
     },
     "keyword": {
         "label": "Keyword Search Agent",
