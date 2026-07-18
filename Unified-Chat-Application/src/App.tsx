@@ -168,7 +168,6 @@ const App = () => {
           </div>
           <div className="controls-row">
             <label className="select-label">
-              Agent
               <select
                 value={agent}
                 onChange={(event) => handleAgentChange(event.target.value)}

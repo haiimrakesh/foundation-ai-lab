@@ -19,6 +19,7 @@ class LLMService:
         api_key: str | None = None,
         model: str | None = None,
         client: Any | None = None,
+        base_url: str | None = None,
     ) -> None:
         self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         self._client = client
@@ -29,7 +30,11 @@ class LLMService:
         key = api_key or os.getenv("OPENAI_API_KEY")
         if not key:
             raise LLMConfigurationError("OPENAI_API_KEY is not configured")
+        
+        
+        baseurl = base_url or os.getenv("OPENAI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/")
 
+        print(key)
         try:
             from openai import OpenAI
         except ImportError as exc:
@@ -38,7 +43,7 @@ class LLMService:
             ) from exc
 
         self._client = OpenAI(api_key=key, 
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
+        base_url=baseurl)
 
     def generate(
         self,
